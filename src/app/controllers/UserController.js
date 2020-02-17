@@ -1,6 +1,7 @@
 import * as Yup from 'yup';
 
 import User from '../models/User';
+import File from '../models/File';
 
 class UserController {
   async store(req, res) {
@@ -53,7 +54,7 @@ class UserController {
       return res.status(400).json({ error: 'Validation fails' });
     }
 
-    const { email, oldPassword } = req.body;
+    const { email, oldPassword, name, password } = req.body;
 
     const user = await User.findByPk(req.userId);
 
@@ -69,14 +70,25 @@ class UserController {
       return res.status(401).json({ error: 'Password does not match' });
     }
 
-    const { id, name, provider } = await user.update(req.body);
+    const { id, avatar } = await User.findByPk(user.id, {
+      include: [
+        {
+          model: File,
+          as: 'avatar',
+          attributes: ['id', 'path', 'url'],
+        },
+      ],
+    });
 
-    return res.json({
+    const updated = await user.update({
       id,
       name,
       email,
-      provider,
+      avatar,
+      password,
     });
+
+    return res.json(updated);
   }
 }
 
